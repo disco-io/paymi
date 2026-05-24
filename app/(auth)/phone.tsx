@@ -29,7 +29,7 @@ export default function PhoneScreen() {
       return;
     }
     if (!isSupabaseConfigured) {
-      setError('add Supabase keys to .env — see README');
+      setError('add Supabase keys to .env (see README)');
       return;
     }
 
@@ -53,7 +53,7 @@ export default function PhoneScreen() {
       >
         <View style={styles.content}>
           <Logo />
-          <Text style={styles.tagline}>split the check, keep the vibe</Text>
+          <Text style={styles.tagline}>split checks, not friendships</Text>
 
           <View style={styles.form}>
             <Input
@@ -70,7 +70,7 @@ export default function PhoneScreen() {
             {!isSupabaseConfigured ? (
               <>
                 <Text style={styles.configHint}>
-                  Supabase isn't configured yet — add keys to .env (see README)
+                  Supabase isn't configured yet. Add keys to .env (see README)
                 </Text>
                 <Button
                   label="preview app UI"
@@ -81,7 +81,7 @@ export default function PhoneScreen() {
             ) : null}
           </View>
 
-          <Text style={styles.hint}>we'll text you a code — no password needed</Text>
+          <Text style={styles.hint}>we'll text you a code, no password needed</Text>
         </View>
       </KeyboardAvoidingView>
     </Screen>

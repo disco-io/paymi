@@ -55,7 +55,7 @@ export default function OnboardingScreen() {
           <Text style={styles.sub}>this is how you'll show up in splits</Text>
 
           <Input
-            placeholder="Sophia"
+            placeholder="delphia"
             autoCapitalize="words"
             value={name}
             onChangeText={setName}

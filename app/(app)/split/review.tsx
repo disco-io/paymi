@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -6,16 +6,62 @@ import {
   View,
   Pressable,
   TextInput,
+  Platform,
+  type TextStyle,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/ui/Screen';
 import { Button } from '@/components/ui/Button';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { MoneyField } from '@/components/MoneyField';
 import { useSplitStore } from '@/features/split/splitStore';
 import { useAuth } from '@/features/auth/AuthContext';
 import { createReceipt } from '@/features/receipt/api';
 import { formatCents } from '@/features/split/splitMath';
-import { colors, spacing, typography, radius } from '@/theme';
+import { colors, spacing, typography, radius, inputAccent } from '@/theme';
+
+const webInputReset: TextStyle | undefined =
+  Platform.OS === 'web' ? { outlineWidth: 0 } : undefined;
+
+function ItemRow({
+  name,
+  amountCents,
+  isDraft,
+  onUpdate,
+  onRemove,
+}: {
+  name: string;
+  amountCents: number;
+  isDraft: boolean;
+  onUpdate: (patch: { name?: string; amountCents?: number }) => void;
+  onRemove: () => void;
+}) {
+  const [nameFocused, setNameFocused] = useState(false);
+  const showPlaceholder = isDraft && !nameFocused && !name.trim();
+
+  return (
+    <View style={styles.itemRow}>
+      <TextInput
+        style={[styles.itemName, webInputReset]}
+        placeholder={showPlaceholder ? 'new item' : undefined}
+        placeholderTextColor={colors.textMuted}
+        value={name}
+        onFocus={() => setNameFocused(true)}
+        onBlur={() => setNameFocused(false)}
+        onChangeText={(t) => onUpdate({ name: t })}
+        {...inputAccent}
+      />
+      <MoneyField
+        compact
+        cents={amountCents}
+        onChangeCents={(c) => onUpdate({ amountCents: c })}
+      />
+      <Pressable onPress={onRemove} hitSlop={8}>
+        <Text style={styles.remove}>×</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 export default function ReviewScreen() {
   const { groupId, manual } = useLocalSearchParams<{ groupId: string; manual?: string }>();
@@ -35,11 +81,8 @@ export default function ReviewScreen() {
 
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (manual && items.length === 0) {
-      addItem('Item 1', 0);
-    }
-  }, [manual]);
+  const hasDraftItem = items.some((i) => !i.name.trim());
+  const hasValidItems = items.some((i) => i.name.trim().length > 0);
 
   const ensureReceipt = async () => {
     if (receiptId || !user || !groupId) return receiptId;
@@ -55,7 +98,12 @@ export default function ReviewScreen() {
   };
 
   const continueToAssign = async () => {
-    if (items.length === 0) return;
+    if (!hasValidItems) return;
+
+    items
+      .filter((i) => !i.name.trim())
+      .forEach((i) => removeItem(i.id));
+
     setLoading(true);
     try {
       await ensureReceipt();
@@ -66,12 +114,13 @@ export default function ReviewScreen() {
   };
 
   const addBlankItem = () => {
-    addItem('New item', 0);
+    if (hasDraftItem) return;
+    addItem('', 0);
   };
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Pressable onPress={() => router.back()}>
           <Text style={styles.back}>← back</Text>
         </Pressable>
@@ -82,70 +131,49 @@ export default function ReviewScreen() {
         <Text style={styles.sub}>
           {manual
             ? 'type what everyone ordered'
-            : 'fix anything we misread — then assign'}
+            : 'fix anything we misread, then assign'}
         </Text>
 
         <TextInput
-          style={styles.merchantInput}
+          style={[styles.merchantInput, webInputReset]}
           placeholder="restaurant name"
           placeholderTextColor={colors.textMuted}
           value={merchant ?? ''}
           onChangeText={setMerchant}
+          {...inputAccent}
         />
 
         <GlassCard>
           {items.map((item) => (
-            <View key={item.id} style={styles.itemRow}>
-              <TextInput
-                style={styles.itemName}
-                value={item.name}
-                onChangeText={(t) => updateItem(item.id, { name: t })}
-              />
-              <View style={styles.priceWrap}>
-                <Text style={styles.dollar}>$</Text>
-                <TextInput
-                  style={styles.priceInput}
-                  keyboardType="decimal-pad"
-                  value={(item.amountCents / 100).toFixed(2)}
-                  onChangeText={(t) => {
-                    const n = parseFloat(t.replace(/[^0-9.]/g, '')) || 0;
-                    updateItem(item.id, { amountCents: Math.round(n * 100) });
-                  }}
-                />
-              </View>
-              <Pressable onPress={() => removeItem(item.id)}>
-                <Text style={styles.remove}>×</Text>
-              </Pressable>
-            </View>
+            <ItemRow
+              key={item.id}
+              name={item.name}
+              amountCents={item.amountCents}
+              isDraft={!item.name.trim()}
+              onUpdate={(patch) => updateItem(item.id, patch)}
+              onRemove={() => removeItem(item.id)}
+            />
           ))}
-          <Pressable onPress={addBlankItem}>
-            <Text style={styles.addLine}>+ add item</Text>
+          <Pressable onPress={addBlankItem} disabled={hasDraftItem}>
+            <Text style={[styles.addLine, hasDraftItem && styles.addLineDisabled]}>
+              + add item
+            </Text>
           </Pressable>
         </GlassCard>
 
         <View style={styles.taxRow}>
           <View style={styles.taxField}>
             <Text style={styles.taxLabel}>tax</Text>
-            <TextInput
-              style={styles.taxInput}
-              keyboardType="decimal-pad"
-              value={(taxCents / 100).toFixed(2)}
-              onChangeText={(t) => {
-                const n = parseFloat(t) || 0;
-                setTaxTip(Math.round(n * 100), tipCents);
-              }}
+            <MoneyField
+              cents={taxCents}
+              onChangeCents={(c) => setTaxTip(c, tipCents)}
             />
           </View>
           <View style={styles.taxField}>
             <Text style={styles.taxLabel}>tip</Text>
-            <TextInput
-              style={styles.taxInput}
-              keyboardType="decimal-pad"
-              value={(tipCents / 100).toFixed(2)}
-              onChangeText={(t) => {
-                const n = parseFloat(t) || 0;
-                setTaxTip(taxCents, Math.round(n * 100));
-              }}
+            <MoneyField
+              cents={tipCents}
+              onChangeCents={(c) => setTaxTip(taxCents, c)}
             />
           </View>
         </View>
@@ -158,7 +186,7 @@ export default function ReviewScreen() {
           label="assign to people →"
           onPress={continueToAssign}
           loading={loading}
-          disabled={items.length === 0}
+          disabled={!hasValidItems}
         />
       </ScrollView>
     </Screen>
@@ -171,7 +199,7 @@ const styles = StyleSheet.create({
   title: { ...typography.title, color: colors.text },
   sub: { ...typography.body, color: colors.textSecondary },
   merchantInput: {
-    ...typography.subtitle,
+    ...typography.body,
     backgroundColor: colors.white,
     borderRadius: radius.md,
     padding: spacing.md,
@@ -192,31 +220,24 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.text,
   },
-  priceWrap: { flexDirection: 'row', alignItems: 'center' },
-  dollar: { ...typography.body, color: colors.textMuted },
-  priceInput: {
-    width: 64,
-    ...typography.body,
-    color: colors.text,
-    textAlign: 'right',
-  },
   remove: { fontSize: 22, color: colors.textMuted, padding: 4 },
   addLine: {
     ...typography.caption,
     color: colors.primary,
     marginTop: spacing.sm,
   },
+  addLineDisabled: {
+    color: colors.textMuted,
+    opacity: 0.45,
+  },
   taxRow: { flexDirection: 'row', gap: spacing.md },
   taxField: { flex: 1 },
-  taxLabel: { ...typography.caption, color: colors.textSecondary, marginBottom: 4 },
-  taxInput: {
-    backgroundColor: colors.white,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...typography.body,
-    color: colors.text,
+  taxLabel: {
+    ...typography.label,
+    color: colors.textSecondary,
+    marginBottom: 4,
+    textTransform: 'none',
+    fontSize: 13,
   },
   total: {
     ...typography.caption,

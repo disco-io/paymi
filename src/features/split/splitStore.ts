@@ -36,7 +36,7 @@ type SplitStore = SplitDraft & {
   setTaxTip: (taxCents: number, tipCents: number) => void;
   setMerchant: (merchant: string) => void;
   updateItem: (id: string, patch: Partial<SplitLineItem>) => void;
-  addItem: (name: string, amountCents: number) => void;
+  addItem: (name: string, amountCents: number) => string;
   removeItem: (id: string) => void;
   setItemAssignments: (itemId: string, assignments: Record<string, number>) => void;
   setReceiptId: (id: string) => void;
@@ -77,13 +77,16 @@ export const useSplitStore = create<SplitStore>((set) => ({
     set((s) => ({
       items: s.items.map((it) => (it.id === id ? { ...it, ...patch } : it)),
     })),
-  addItem: (name, amountCents) =>
+  addItem: (name, amountCents) => {
+    const id = newItemId();
     set((s) => ({
       items: [
         ...s.items,
-        { id: newItemId(), name, amountCents, assignments: {} },
+        { id, name, amountCents, assignments: {} },
       ],
-    })),
+    }));
+    return id;
+  },
   removeItem: (id) =>
     set((s) => ({ items: s.items.filter((it) => it.id !== id) })),
   setItemAssignments: (itemId, assignments) =>

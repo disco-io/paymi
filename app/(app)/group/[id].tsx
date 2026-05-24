@@ -115,14 +115,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   section: {
-    ...typography.caption,
+    ...typography.label,
     color: colors.textSecondary,
     marginTop: spacing.md,
+    textTransform: 'none',
+    fontSize: 14,
   },
   chips: { marginVertical: spacing.sm },
   ctaCard: { marginTop: spacing.lg },
   ctaTitle: {
-    ...typography.subtitle,
+    ...typography.title,
+    fontSize: 18,
     color: colors.text,
   },
   ctaSub: {

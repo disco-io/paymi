@@ -1,5 +1,5 @@
 import { StyleSheet, TextInput, TextInputProps, View, Text } from 'react-native';
-import { colors, radius, typography } from '@/theme';
+import { colors, radius, typography, inputAccent } from '@/theme';
 
 type Props = TextInputProps & {
   label?: string;
@@ -12,6 +12,7 @@ export function Input({ label, style, ...rest }: Props) {
       <TextInput
         placeholderTextColor={colors.textMuted}
         style={[styles.input, style]}
+        {...inputAccent}
         {...rest}
       />
     </View>
@@ -23,8 +24,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    ...typography.caption,
+    ...typography.label,
     color: colors.textSecondary,
+    textTransform: 'none',
+    fontSize: 13,
   },
   input: {
     ...typography.body,

@@ -76,7 +76,7 @@ export default function CreateGroupScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <Pressable onPress={() => router.back()} style={styles.back}>
             <Text style={styles.backText}>← back</Text>
           </Pressable>
@@ -164,8 +164,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   label: {
-    ...typography.caption,
+    ...typography.label,
     color: colors.textSecondary,
+    textTransform: 'none',
+    fontSize: 13,
   },
   emojiRow: {
     flexDirection: 'row',
@@ -187,7 +189,8 @@ const styles = StyleSheet.create({
   },
   emojiText: { fontSize: 22 },
   section: {
-    ...typography.subtitle,
+    ...typography.title,
+    fontSize: 18,
     color: colors.text,
     marginTop: spacing.md,
   },

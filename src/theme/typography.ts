@@ -1,14 +1,21 @@
 import { TextStyle } from 'react-native';
 
+/** Abhaya Libre, loaded in app/_layout.tsx */
+export const fontFamily = {
+  heading: 'AbhayaLibre_400Regular',
+} as const;
+
 export const typography = {
   hero: {
+    fontFamily: fontFamily.heading,
     fontSize: 32,
-    fontWeight: '700',
+    fontWeight: '400',
     letterSpacing: -0.5,
   } as TextStyle,
   title: {
+    fontFamily: fontFamily.heading,
     fontSize: 22,
-    fontWeight: '600',
+    fontWeight: '400',
     letterSpacing: -0.3,
   } as TextStyle,
   subtitle: {
@@ -24,8 +31,9 @@ export const typography = {
     fontWeight: '500',
   } as TextStyle,
   label: {
+    fontFamily: fontFamily.heading,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '400',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   } as TextStyle,

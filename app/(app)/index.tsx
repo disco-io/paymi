@@ -118,7 +118,8 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 32 },
   cardText: { flex: 1 },
   cardTitle: {
-    ...typography.subtitle,
+    ...typography.title,
+    fontSize: 17,
     color: colors.text,
   },
   cardSub: {
@@ -132,7 +133,8 @@ const styles = StyleSheet.create({
   },
   empty: { marginTop: spacing.xl },
   emptyTitle: {
-    ...typography.subtitle,
+    ...typography.title,
+    fontSize: 18,
     color: colors.text,
     marginBottom: 8,
   },

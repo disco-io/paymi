@@ -62,7 +62,7 @@ export async function createGroup(
   await supabase.from('group_members').insert({
     group_id: group.id,
     user_id: creatorId,
-    display_label: 'You',
+    display_label: 'you',
     is_pending: false,
   });
 

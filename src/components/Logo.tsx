@@ -1,5 +1,5 @@
 import { StyleSheet, Text, TextProps } from 'react-native';
-import { colors } from '@/theme';
+import { colors, fontFamily } from '@/theme';
 
 type Props = TextProps & {
   size?: 'hero' | 'header';
@@ -21,7 +21,7 @@ export function Logo({ size = 'hero', style, ...rest }: Props) {
 
 const styles = StyleSheet.create({
   hero: {
-    fontFamily: 'AbhayaLibre_400Regular',
+    fontFamily: fontFamily.heading,
     fontStyle: 'italic',
     fontSize: 48,
     color: colors.primary,
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   header: {
-    fontFamily: 'AbhayaLibre_400Regular',
+    fontFamily: fontFamily.heading,
     fontStyle: 'italic',
     fontSize: 32,
     color: colors.primary,
