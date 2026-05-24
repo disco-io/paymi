@@ -1,0 +1,11 @@
+[project]
+id = "your-project-ref"
+
+[api]
+enabled = true
+
+[db]
+major_version = 15
+
+[functions.parse-receipt]
+verify_jwt = true

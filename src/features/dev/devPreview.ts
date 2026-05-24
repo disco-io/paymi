@@ -1,0 +1,57 @@
+import { create } from 'zustand';
+import type { Group, GroupMember } from '@/types/database';
+
+export const DEMO_GROUP_ID = 'demo-aruba';
+export const DEMO_GROUP: Group = {
+  id: DEMO_GROUP_ID,
+  name: 'Aruba spring break',
+  emoji: '🏝️',
+  created_by: 'demo-user',
+  created_at: new Date().toISOString(),
+};
+
+export const DEMO_MEMBERS: GroupMember[] = [
+  {
+    id: 'demo-m1',
+    group_id: DEMO_GROUP_ID,
+    user_id: null,
+    phone: null,
+    display_label: 'You',
+    is_pending: false,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'demo-m2',
+    group_id: DEMO_GROUP_ID,
+    user_id: null,
+    phone: null,
+    display_label: 'Delphia',
+    is_pending: false,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'demo-m3',
+    group_id: DEMO_GROUP_ID,
+    user_id: null,
+    phone: null,
+    display_label: 'Gemma',
+    is_pending: false,
+    created_at: new Date().toISOString(),
+  },
+];
+
+type DevPreviewStore = {
+  enabled: boolean;
+  enable: () => void;
+  disable: () => void;
+};
+
+export const useDevPreview = create<DevPreviewStore>((set) => ({
+  enabled: false,
+  enable: () => set({ enabled: true }),
+  disable: () => set({ enabled: false }),
+}));
+
+export function isDevPreviewActive() {
+  return __DEV__ && useDevPreview.getState().enabled;
+}
