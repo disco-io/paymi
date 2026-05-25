@@ -6,7 +6,7 @@ Social bill-splitting app — scan receipts, assign items, split tax & tip fairl
 
 ## Prerequisites
 
-- Node.js **20+** (Expo SDK 56 requires it)
+- Node.js **20+** (Expo SDK 54)
 - [Supabase](https://supabase.com) project
 - [Twilio](https://twilio.com) (or other SMS provider) for phone OTP
 - [OpenAI API key](https://platform.openai.com) for receipt OCR (Edge Function)
