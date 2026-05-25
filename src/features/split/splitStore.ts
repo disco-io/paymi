@@ -40,6 +40,16 @@ type SplitStore = SplitDraft & {
   removeItem: (id: string) => void;
   setItemAssignments: (itemId: string, assignments: Record<string, number>) => void;
   setReceiptId: (id: string) => void;
+  loadDraft: (draft: {
+    groupId: string;
+    receiptId: string | null;
+    merchant: string | null;
+    taxCents: number;
+    tipCents: number;
+    people: SplitPerson[];
+    items: SplitLineItem[];
+    imagePath?: string | null;
+  }) => void;
 };
 
 let itemCounter = 0;
@@ -96,4 +106,18 @@ export const useSplitStore = create<SplitStore>((set) => ({
       ),
     })),
   setReceiptId: (id) => set({ receiptId: id }),
+  loadDraft: (draft) =>
+    set({
+      ...initial,
+      groupId: draft.groupId,
+      receiptId: draft.receiptId,
+      imageUri: null,
+      imagePath: draft.imagePath ?? null,
+      merchant: draft.merchant,
+      receiptDate: null,
+      taxCents: draft.taxCents,
+      tipCents: draft.tipCents,
+      people: draft.people,
+      items: draft.items,
+    }),
 }));

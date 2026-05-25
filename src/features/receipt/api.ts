@@ -1,5 +1,23 @@
 import { supabase } from '@/lib/supabase';
 import type { ParsedReceipt, Receipt, ReceiptItem } from '@/types/database';
+import type { SplitLineItem } from '@/features/split/splitMath';
+
+export type ReceiptListItem = {
+  id: string;
+  merchant: string | null;
+  tax_cents: number;
+  tip_cents: number;
+  created_at: string;
+};
+
+export type LoadedReceiptSplit = {
+  receiptId: string;
+  groupId: string;
+  merchant: string | null;
+  taxCents: number;
+  tipCents: number;
+  items: SplitLineItem[];
+};
 
 export async function uploadReceiptImage(
   groupId: string,
@@ -97,4 +115,122 @@ export async function saveAssignments(
   );
 
   if (error) throw error;
+}
+
+export async function fetchGroupReceipts(groupId: string): Promise<ReceiptListItem[]> {
+  const { data, error } = await supabase
+    .from('receipts')
+    .select('id, merchant, tax_cents, tip_cents, created_at')
+    .eq('group_id', groupId)
+    .eq('status', 'open')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function fetchReceiptSplit(receiptId: string): Promise<LoadedReceiptSplit> {
+  const { data: receipt, error: rErr } = await supabase
+    .from('receipts')
+    .select('id, group_id, merchant, tax_cents, tip_cents')
+    .eq('id', receiptId)
+    .single();
+
+  if (rErr || !receipt) throw rErr ?? new Error('Receipt not found');
+
+  const { data: dbItems, error: iErr } = await supabase
+    .from('receipt_items')
+    .select('id, name, amount_cents, sort_order')
+    .eq('receipt_id', receiptId)
+    .order('sort_order');
+
+  if (iErr) throw iErr;
+
+  const itemIds = (dbItems ?? []).map((i) => i.id);
+  let assignmentRows: { receipt_item_id: string; member_id: string; share: number }[] = [];
+
+  if (itemIds.length > 0) {
+    const { data: assignments, error: aErr } = await supabase
+      .from('split_assignments')
+      .select('receipt_item_id, member_id, share')
+      .in('receipt_item_id', itemIds);
+
+    if (aErr) throw aErr;
+    assignmentRows = assignments ?? [];
+  }
+
+  const items: SplitLineItem[] = (dbItems ?? []).map((row) => {
+    const assignments: Record<string, number> = {};
+    assignmentRows
+      .filter((a) => a.receipt_item_id === row.id)
+      .forEach((a) => {
+        assignments[a.member_id] = Number(a.share);
+      });
+    return {
+      id: row.id,
+      name: row.name,
+      amountCents: row.amount_cents,
+      assignments,
+    };
+  });
+
+  return {
+    receiptId: receipt.id,
+    groupId: receipt.group_id,
+    merchant: receipt.merchant,
+    taxCents: receipt.tax_cents,
+    tipCents: receipt.tip_cents,
+    items,
+  };
+}
+
+export async function updateReceipt(
+  receiptId: string,
+  fields: {
+    merchant: string | null;
+    tax_cents: number;
+    tip_cents: number;
+  }
+) {
+  const { error } = await supabase
+    .from('receipts')
+    .update(fields)
+    .eq('id', receiptId);
+
+  if (error) throw error;
+}
+
+export async function replaceReceiptSplit(
+  receiptId: string,
+  items: { name: string; amount_cents: number; quantity: number }[],
+  assignmentsByIndex: { member_id: string; share: number }[][]
+) {
+  const { error: delErr } = await supabase
+    .from('receipt_items')
+    .delete()
+    .eq('receipt_id', receiptId);
+
+  if (delErr) throw delErr;
+
+  const dbItems = await saveReceiptItems(receiptId, items);
+
+  for (let i = 0; i < dbItems.length; i++) {
+    await saveAssignments(dbItems[i].id, assignmentsByIndex[i] ?? []);
+  }
+
+  return dbItems;
+}
+
+export async function persistReceiptSplit(
+  receiptId: string,
+  fields: {
+    merchant: string | null;
+    tax_cents: number;
+    tip_cents: number;
+  },
+  items: { name: string; amount_cents: number; quantity: number }[],
+  assignmentsByIndex: { member_id: string; share: number }[][]
+) {
+  await updateReceipt(receiptId, fields);
+  await replaceReceiptSplit(receiptId, items, assignmentsByIndex);
 }

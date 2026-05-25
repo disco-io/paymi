@@ -7,16 +7,39 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { useSplitStore } from '@/features/split/splitStore';
 import { computePersonTotals, formatCents } from '@/features/split/splitMath';
 import {
-  saveReceiptItems,
-  saveAssignments,
   createReceipt,
+  persistReceiptSplit,
 } from '@/features/receipt/api';
 import { useAuth } from '@/features/auth/AuthContext';
 import { isDevPreviewActive } from '@/features/dev/devPreview';
+import {
+  newDemoReceiptId,
+  saveDemoSplit,
+} from '@/features/dev/demoSplits';
 import { colors, spacing, typography } from '@/theme';
 
+function buildPersistPayload(items: ReturnType<typeof useSplitStore.getState>['items']) {
+  const validItems = items.filter((i) => i.name.trim().length > 0);
+  return {
+    itemRows: validItems.map((i) => ({
+      name: i.name.trim(),
+      amount_cents: i.amountCents,
+      quantity: 1,
+    })),
+    assignmentsByIndex: validItems.map((i) =>
+      Object.entries(i.assignments).map(([member_id, share]) => ({
+        member_id,
+        share,
+      }))
+    ),
+  };
+}
+
 export default function SummaryScreen() {
-  const { groupId } = useLocalSearchParams<{ groupId: string }>();
+  const { groupId, editing } = useLocalSearchParams<{
+    groupId: string;
+    editing?: string;
+  }>();
   const { user } = useAuth();
   const people = useSplitStore((s) => s.people);
   const items = useSplitStore((s) => s.items);
@@ -33,11 +56,42 @@ export default function SummaryScreen() {
 
   const totals = computePersonTotals(people, items, taxCents, tipCents);
   const grandTotal = totals.reduce((s, t) => s + t.totalCents, 0);
+  const isEditing = editing === '1' || !!receiptId;
+
+  const editSplit = () => {
+    if (!groupId) return;
+    router.push({
+      pathname: '/(app)/split/assign',
+      params: isEditing ? { groupId, editing: '1' } : { groupId },
+    });
+  };
+
+  const editItems = () => {
+    if (!groupId) return;
+    router.push({
+      pathname: '/(app)/split/review',
+      params: isEditing ? { groupId, editing: '1' } : { groupId },
+    });
+  };
 
   const saveAndFinish = async () => {
     if (!groupId) return;
 
+    const { itemRows, assignmentsByIndex } = buildPersistPayload(items);
+    if (itemRows.length === 0) return;
+
     if (isDevPreviewActive()) {
+      const rid = receiptId ?? newDemoReceiptId();
+      saveDemoSplit({
+        receiptId: rid,
+        groupId,
+        merchant,
+        taxCents,
+        tipCents,
+        items: items.filter((i) => i.name.trim()),
+        people: [...people],
+        savedAt: new Date().toISOString(),
+      });
       setSaved(true);
       reset();
       router.replace(`/(app)/group/${groupId}`);
@@ -60,27 +114,16 @@ export default function SummaryScreen() {
         setReceiptId(rid);
       }
 
-      const dbItems = await saveReceiptItems(
+      await persistReceiptSplit(
         rid,
-        items.map((i) => ({
-          name: i.name,
-          amount_cents: i.amountCents,
-          quantity: 1,
-        }))
+        {
+          merchant,
+          tax_cents: taxCents,
+          tip_cents: tipCents,
+        },
+        itemRows,
+        assignmentsByIndex
       );
-
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        const dbItem = dbItems[i];
-        if (!dbItem) continue;
-        const assignments = Object.entries(item.assignments).map(
-          ([memberId, share]) => ({
-            member_id: memberId,
-            share,
-          })
-        );
-        await saveAssignments(dbItem.id, assignments);
-      }
 
       setSaved(true);
       reset();
@@ -95,9 +138,11 @@ export default function SummaryScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.title}>the damage 💸</Text>
+        <Text style={styles.title}>{isEditing ? 'update split' : 'the damage 💸'}</Text>
         <Text style={styles.sub}>
-          tax + tip split by what each person ordered
+          {isEditing
+            ? 'change assignments or items, then save again'
+            : 'tax + tip split by what each person ordered'}
         </Text>
 
         {totals
@@ -117,8 +162,15 @@ export default function SummaryScreen() {
 
         <Text style={styles.grand}>total {formatCents(grandTotal)}</Text>
 
+        {!saved && (
+          <>
+            <Button label="edit assignments" variant="secondary" onPress={editSplit} />
+            <Button label="edit items" variant="secondary" onPress={editItems} />
+          </>
+        )}
+
         <Button
-          label={saved ? 'saved ✓' : 'save split'}
+          label={saved ? 'saved ✓' : isEditing ? 'save changes' : 'save split'}
           onPress={saveAndFinish}
           loading={saving}
           disabled={saved}

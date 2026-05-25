@@ -64,7 +64,11 @@ function ItemRow({
 }
 
 export default function ReviewScreen() {
-  const { groupId, manual } = useLocalSearchParams<{ groupId: string; manual?: string }>();
+  const { groupId, manual, editing } = useLocalSearchParams<{
+    groupId: string;
+    manual?: string;
+    editing?: string;
+  }>();
   const { user } = useAuth();
   const merchant = useSplitStore((s) => s.merchant);
   const taxCents = useSplitStore((s) => s.taxCents);
@@ -107,7 +111,10 @@ export default function ReviewScreen() {
     setLoading(true);
     try {
       await ensureReceipt();
-      router.push({ pathname: '/(app)/split/assign', params: { groupId } });
+      router.push({
+        pathname: '/(app)/split/assign',
+        params: editing ? { groupId, editing: '1' } : { groupId },
+      });
     } finally {
       setLoading(false);
     }

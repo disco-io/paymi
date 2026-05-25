@@ -22,7 +22,10 @@ import {
 import { colors, spacing, typography } from '@/theme';
 
 export default function AssignScreen() {
-  const { groupId } = useLocalSearchParams<{ groupId: string }>();
+  const { groupId, editing } = useLocalSearchParams<{
+    groupId: string;
+    editing?: string;
+  }>();
   const people = useSplitStore((s) => s.people);
   const items = useSplitStore((s) => s.items);
   const setItemAssignments = useSplitStore((s) => s.setItemAssignments);
@@ -58,15 +61,26 @@ export default function AssignScreen() {
     (i) => Object.keys(i.assignments).length > 0
   ).length;
 
+  const goBack = () => {
+    if (editing && groupId) {
+      router.replace(`/(app)/group/${groupId}`);
+      return;
+    }
+    router.back();
+  };
+
   return (
     <Screen>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.back}>← review</Text>
+        <Pressable onPress={goBack}>
+          <Text style={styles.back}>{editing ? '← group' : '← review'}</Text>
         </Pressable>
         <Text style={styles.title}>who got what?</Text>
         <Text style={styles.sub}>
-          tap a person, then tap items · {assignedCount}/{items.length} assigned
+          {editing
+            ? 'update assignments, then save again · '
+            : 'tap a person, then tap items · '}
+          {assignedCount}/{items.length} assigned
         </Text>
       </View>
 
@@ -127,7 +141,10 @@ export default function AssignScreen() {
         <Button
           label="see totals →"
           onPress={() =>
-            router.push({ pathname: '/(app)/split/summary', params: { groupId } })
+            router.push({
+              pathname: '/(app)/split/summary',
+              params: editing ? { groupId, editing: '1' } : { groupId },
+            })
           }
           disabled={assignedCount < items.length}
         />
