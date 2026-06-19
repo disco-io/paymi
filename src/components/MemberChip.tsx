@@ -1,15 +1,18 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Avatar } from '@/components/Avatar';
 import { colors, radius, typography } from '@/theme';
 
 type Props = {
   label: string;
+  avatarUrl?: string | null;
   selected?: boolean;
   onPress?: () => void;
   small?: boolean;
+  isLeader?: boolean;
 };
 
-export function MemberChip({ label, selected, onPress, small }: Props) {
-  const initial = label.trim().charAt(0).toUpperCase() || '?';
+export function MemberChip({ label, avatarUrl, selected, onPress, small, isLeader }: Props) {
+  const avatarSize = small ? 'sm' : 'sm';
 
   return (
     <Pressable
@@ -20,10 +23,8 @@ export function MemberChip({ label, selected, onPress, small }: Props) {
         selected && styles.chipSelected,
       ]}
     >
-      <View style={[styles.avatar, selected && styles.avatarSelected]}>
-        <Text style={[styles.initial, selected && styles.initialSelected]}>
-          {initial}
-        </Text>
+      <View style={[styles.avatarWrap, selected && styles.avatarWrapSelected]}>
+        <Avatar name={label} avatarUrl={avatarUrl} size={avatarSize} />
       </View>
       <Text
         style={[styles.label, small && styles.labelSmall, selected && styles.labelSelected]}
@@ -31,6 +32,7 @@ export function MemberChip({ label, selected, onPress, small }: Props) {
       >
         {label}
       </Text>
+      {isLeader ? <Text style={styles.leaderBadge}>leader</Text> : null}
     </Pressable>
   );
 }
@@ -47,26 +49,13 @@ const styles = StyleSheet.create({
     maxWidth: 64,
   },
   chipSelected: {},
-  avatar: {
-    width: 48,
-    height: 48,
+  avatarWrap: {
     borderRadius: radius.full,
-    backgroundColor: colors.creamDark,
     borderWidth: 2,
     borderColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  avatarSelected: {
-    backgroundColor: colors.primary,
+  avatarWrapSelected: {
     borderColor: colors.primaryDark,
-  },
-  initial: {
-    ...typography.subtitle,
-    color: colors.textSecondary,
-  },
-  initialSelected: {
-    color: colors.cream,
   },
   label: {
     ...typography.caption,
@@ -79,5 +68,11 @@ const styles = StyleSheet.create({
   labelSelected: {
     color: colors.primaryDark,
     fontWeight: '600',
+  },
+  leaderBadge: {
+    ...typography.caption,
+    fontSize: 10,
+    color: colors.primary,
+    textTransform: 'lowercase',
   },
 });

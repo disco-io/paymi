@@ -8,6 +8,7 @@ export type ReceiptListItem = {
   tax_cents: number;
   tip_cents: number;
   created_at: string;
+  total_cents: number;
 };
 
 export type LoadedReceiptSplit = {
@@ -120,13 +121,32 @@ export async function saveAssignments(
 export async function fetchGroupReceipts(groupId: string): Promise<ReceiptListItem[]> {
   const { data, error } = await supabase
     .from('receipts')
-    .select('id, merchant, tax_cents, tip_cents, created_at')
+    .select(`
+      id,
+      merchant,
+      tax_cents,
+      tip_cents,
+      created_at,
+      receipt_items ( amount_cents )
+    `)
     .eq('group_id', groupId)
     .eq('status', 'open')
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data ?? [];
+
+  return (data ?? []).map((r) => {
+    const items = (r.receipt_items ?? []) as { amount_cents: number }[];
+    const itemsTotal = items.reduce((sum, i) => sum + i.amount_cents, 0);
+    return {
+      id: r.id,
+      merchant: r.merchant,
+      tax_cents: r.tax_cents,
+      tip_cents: r.tip_cents,
+      created_at: r.created_at,
+      total_cents: itemsTotal + r.tax_cents + r.tip_cents,
+    };
+  });
 }
 
 export async function fetchReceiptSplit(receiptId: string): Promise<LoadedReceiptSplit> {

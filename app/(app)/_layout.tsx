@@ -1,17 +1,13 @@
 import { Redirect, Stack } from 'expo-router';
 import { useAuth } from '@/features/auth/AuthContext';
-import { isDevPreviewActive } from '@/features/dev/devPreview';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isProfileComplete } from '@/features/auth/profile';
 
 export default function AppLayout() {
-  const { session, profile, loading } = useAuth();
-  const preview = isDevPreviewActive() && !isSupabaseConfigured;
+  const { session, profile, paymentMethods, loading } = useAuth();
 
-  if (loading && !preview) return null;
-  if (!preview) {
-    if (!session) return <Redirect href="/(auth)/phone" />;
-    if (!profile?.display_name) return <Redirect href="/(auth)/onboarding" />;
-  }
+  if (loading) return null;
+  if (!session) return <Redirect href="/(auth)/phone" />;
+  if (!isProfileComplete(profile, paymentMethods.length)) return <Redirect href="/(auth)/phone" />;
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }

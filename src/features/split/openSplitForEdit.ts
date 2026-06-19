@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { getDemoSplit } from '@/features/dev/demoSplits';
-import { isDevPreviewActive } from '@/features/dev/devPreview';
+import { isDemoGroup } from '@/features/dev/devPreview';
 import { fetchReceiptSplit } from '@/features/receipt/api';
 import type { SplitPerson } from '@/features/split/splitMath';
 import { useSplitStore } from '@/features/split/splitStore';
@@ -12,7 +12,7 @@ export async function openSplitForEdit(
 ) {
   const loadDraft = useSplitStore.getState().loadDraft;
 
-  if (isDevPreviewActive()) {
+  if (isDemoGroup(groupId)) {
     const split = getDemoSplit(receiptId);
     if (!split) return;
     loadDraft({

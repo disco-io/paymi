@@ -17,6 +17,7 @@ import { MoneyField } from '@/components/MoneyField';
 import { useSplitStore } from '@/features/split/splitStore';
 import { useAuth } from '@/features/auth/AuthContext';
 import { createReceipt } from '@/features/receipt/api';
+import { isDemoGroup } from '@/features/dev/devPreview';
 import { formatCents } from '@/features/split/splitMath';
 import { colors, spacing, typography, radius, inputAccent } from '@/theme';
 
@@ -84,12 +85,13 @@ export default function ReviewScreen() {
   const imagePath = useSplitStore((s) => s.imagePath);
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const hasDraftItem = items.some((i) => !i.name.trim());
   const hasValidItems = items.some((i) => i.name.trim().length > 0);
 
   const ensureReceipt = async () => {
-    if (receiptId || !user || !groupId) return receiptId;
+    if (receiptId || isDemoGroup(groupId) || !user || !groupId) return receiptId;
     const receipt = await createReceipt(groupId, user.id, {
       image_path: imagePath,
       merchant,
@@ -109,12 +111,18 @@ export default function ReviewScreen() {
       .forEach((i) => removeItem(i.id));
 
     setLoading(true);
+    setError(null);
     try {
-      await ensureReceipt();
+      if (!isDemoGroup(groupId)) {
+        await ensureReceipt();
+      }
       router.push({
         pathname: '/(app)/split/assign',
         params: editing ? { groupId, editing: '1' } : { groupId },
       });
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : 'could not continue');
     } finally {
       setLoading(false);
     }
@@ -195,6 +203,7 @@ export default function ReviewScreen() {
           loading={loading}
           disabled={!hasValidItems}
         />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
     </Screen>
   );
@@ -249,6 +258,11 @@ const styles = StyleSheet.create({
   total: {
     ...typography.caption,
     color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  error: {
+    ...typography.caption,
+    color: colors.danger,
     textAlign: 'center',
   },
 });

@@ -8,15 +8,20 @@ import {
   View,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { Avatar } from '@/components/Avatar';
 import { Logo } from '@/components/Logo';
 import { Screen } from '@/components/ui/Screen';
 import { Button } from '@/components/ui/Button';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { useAuth } from '@/features/auth/AuthContext';
 import { fetchMyGroups } from '@/features/groups/api';
+import { isDemoGroup } from '@/features/dev/devPreview';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import type { Group } from '@/types/database';
-import { colors, spacing, typography, radius } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
 
 export default function GroupsHomeScreen() {
+  const { profile, signOut } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,7 +47,31 @@ export default function GroupsHomeScreen() {
     <Screen>
       <View style={styles.header}>
         <Logo size="header" />
-        <Text style={styles.sub}>your groups</Text>
+        <View style={styles.headerRow}>
+          <Pressable
+            onPress={() => profile?.id && router.push(`/(app)/profile/${profile.id}`)}
+            style={styles.profileTap}
+            disabled={!profile?.id}
+          >
+            {profile?.display_name ? (
+              <View style={styles.profileRow}>
+                <Avatar
+                  name={profile.display_name}
+                  avatarUrl={profile.avatar_url}
+                  size="sm"
+                />
+                <Text style={styles.sub}>hey {profile.display_name}</Text>
+              </View>
+            ) : (
+              <Text style={styles.sub}>your groups</Text>
+            )}
+          </Pressable>
+          {isSupabaseConfigured ? (
+            <Pressable onPress={signOut} hitSlop={8}>
+              <Text style={styles.signOut}>sign out</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       <FlatList
@@ -72,7 +101,9 @@ export default function GroupsHomeScreen() {
                 <Text style={styles.emoji}>{item.emoji ?? '✨'}</Text>
                 <View style={styles.cardText}>
                   <Text style={styles.cardTitle}>{item.name}</Text>
-                  <Text style={styles.cardSub}>tap to scan a receipt</Text>
+                  <Text style={styles.cardSub}>
+                    {isDemoGroup(item.id) ? 'tap to scan a receipt' : 'tap to split a check'}
+                  </Text>
                 </View>
                 <Text style={styles.chevron}>›</Text>
               </View>
@@ -97,10 +128,25 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  profileTap: { flex: 1 },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   sub: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginTop: 4,
+  },
+  signOut: {
+    ...typography.caption,
+    color: colors.primary,
   },
   list: {
     padding: spacing.lg,

@@ -2,7 +2,16 @@ export type Profile = {
   id: string;
   phone: string | null;
   display_name: string | null;
+  username: string | null;
   avatar_url: string | null;
+  created_at: string;
+};
+
+export type PaymentMethod = {
+  id: string;
+  profile_id: string;
+  provider: string;
+  username: string;
   created_at: string;
 };
 

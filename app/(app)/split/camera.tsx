@@ -10,7 +10,7 @@ import {
   parseReceiptImage,
   createReceipt,
 } from '@/features/receipt/api';
-import { isDevPreviewActive } from '@/features/dev/devPreview';
+import { isDemoGroup } from '@/features/dev/devPreview';
 import { colors, spacing, typography, radius } from '@/theme';
 
 export default function CameraScreen() {
@@ -25,7 +25,7 @@ export default function CameraScreen() {
 
   const capture = async () => {
     if (!cameraRef.current || !groupId || capturing) return;
-    if (!user && !isDevPreviewActive()) return;
+    if (!user && !isDemoGroup(groupId)) return;
 
     setCapturing(true);
     try {
@@ -37,9 +37,9 @@ export default function CameraScreen() {
 
       setImage(photo.uri, '');
 
-      if (isDevPreviewActive()) {
+      if (isDemoGroup(groupId)) {
         applyParsed({
-          merchant: 'Sunset Bistro',
+          merchant: 'Sunset Restaurant',
           receipt_date: null,
           items: [
             { name: 'Caesar salad', amount_cents: 1400, quantity: 1 },

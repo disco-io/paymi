@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -29,14 +29,17 @@ export default function AssignScreen() {
   const people = useSplitStore((s) => s.people);
   const items = useSplitStore((s) => s.items);
   const setItemAssignments = useSplitStore((s) => s.setItemAssignments);
-  const [activeMember, setActiveMember] = useState<string | null>(
-    people[0]?.id ?? null
-  );
+  const [activeMember, setActiveMember] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(
     items[0]?.id ?? null
   );
 
-  const selectedItem = items.find((i) => i.id === selectedItemId);
+  useEffect(() => {
+    if (people.length === 0) return;
+    if (!activeMember || !people.some((p) => p.id === activeMember)) {
+      setActiveMember(people[0].id);
+    }
+  }, [people, activeMember]);
 
   const assignToActive = (itemId: string) => {
     if (!activeMember) return;
@@ -49,6 +52,7 @@ export default function AssignScreen() {
   };
 
   const assignEveryoneToItem = (itemId: string) => {
+    if (people.length === 0) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setItemAssignments(
       itemId,
@@ -79,25 +83,29 @@ export default function AssignScreen() {
         <Text style={styles.sub}>
           {editing
             ? 'update assignments, then save again · '
-            : 'tap a person, then tap items · '}
+            : 'tap a person, then tap items · long press item for everyone · '}
           {assignedCount}/{items.length} assigned
         </Text>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.peopleRow}
-      >
-        {people.map((p) => (
-          <MemberChip
-            key={p.id}
-            label={p.label}
-            selected={activeMember === p.id}
-            onPress={() => setActiveMember(p.id)}
-          />
-        ))}
-      </ScrollView>
+      {people.length === 0 ? (
+        <Text style={styles.emptyPeople}>no people in this group yet</Text>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.peopleRow}
+        >
+          {people.map((p) => (
+            <MemberChip
+              key={p.id}
+              label={p.label}
+              selected={activeMember === p.id}
+              onPress={() => setActiveMember(p.id)}
+            />
+          ))}
+        </ScrollView>
+      )}
 
       <FlatList
         data={items}
@@ -129,7 +137,7 @@ export default function AssignScreen() {
                 <Text style={styles.assignees}>
                   {labels.length > 0
                     ? labels.join(' · ')
-                    : 'tap to assign · hold for everyone'}
+                    : 'tap to assign · long press for everyone'}
                 </Text>
               </GlassCard>
             </Pressable>
@@ -146,7 +154,7 @@ export default function AssignScreen() {
               params: editing ? { groupId, editing: '1' } : { groupId },
             })
           }
-          disabled={assignedCount < items.length}
+          disabled={assignedCount < items.length || people.length === 0}
         />
       </View>
     </Screen>
@@ -158,6 +166,12 @@ const styles = StyleSheet.create({
   back: { ...typography.body, color: colors.primary, marginBottom: spacing.sm },
   title: { ...typography.title, color: colors.text },
   sub: { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
+  emptyPeople: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    padding: spacing.lg,
+  },
   peopleRow: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,

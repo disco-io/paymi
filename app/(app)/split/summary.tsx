@@ -11,7 +11,7 @@ import {
   persistReceiptSplit,
 } from '@/features/receipt/api';
 import { useAuth } from '@/features/auth/AuthContext';
-import { isDevPreviewActive } from '@/features/dev/devPreview';
+import { isDemoGroup } from '@/features/dev/devPreview';
 import {
   newDemoReceiptId,
   saveDemoSplit,
@@ -53,6 +53,7 @@ export default function SummaryScreen() {
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const totals = computePersonTotals(people, items, taxCents, tipCents);
   const grandTotal = totals.reduce((s, t) => s + t.totalCents, 0);
@@ -80,7 +81,7 @@ export default function SummaryScreen() {
     const { itemRows, assignmentsByIndex } = buildPersistPayload(items);
     if (itemRows.length === 0) return;
 
-    if (isDevPreviewActive()) {
+    if (isDemoGroup(groupId)) {
       const rid = receiptId ?? newDemoReceiptId();
       saveDemoSplit({
         receiptId: rid,
@@ -100,6 +101,7 @@ export default function SummaryScreen() {
 
     if (!user) return;
     setSaving(true);
+    setError(null);
     try {
       let rid = receiptId;
       if (!rid) {
@@ -130,6 +132,7 @@ export default function SummaryScreen() {
       router.replace(`/(app)/group/${groupId}`);
     } catch (e) {
       console.error(e);
+      setError(e instanceof Error ? e.message : 'could not save split');
     } finally {
       setSaving(false);
     }
@@ -168,6 +171,8 @@ export default function SummaryScreen() {
             <Button label="edit items" variant="secondary" onPress={editItems} />
           </>
         )}
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <Button
           label={saved ? 'saved ✓' : isEditing ? 'save changes' : 'save split'}
@@ -211,5 +216,10 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginVertical: spacing.sm,
+  },
+  error: {
+    ...typography.caption,
+    color: colors.danger,
+    textAlign: 'center',
   },
 });

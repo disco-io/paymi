@@ -1,17 +1,11 @@
 import { Redirect } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '@/features/auth/AuthContext';
-import { useDevPreview } from '@/features/dev/devPreview';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isProfileComplete } from '@/features/auth/profile';
 import { colors } from '@/theme';
 
 export default function Index() {
-  const { session, profile, loading } = useAuth();
-  const devPreview = useDevPreview((s) => s.enabled);
-
-  if (devPreview && !isSupabaseConfigured) {
-    return <Redirect href="/(app)" />;
-  }
+  const { session, profile, paymentMethods, loading } = useAuth();
 
   if (loading) {
     return (
@@ -25,8 +19,8 @@ export default function Index() {
     return <Redirect href="/(auth)/phone" />;
   }
 
-  if (!profile?.display_name) {
-    return <Redirect href="/(auth)/onboarding" />;
+  if (!isProfileComplete(profile, paymentMethods.length)) {
+    return <Redirect href="/(auth)/phone" />;
   }
 
   return <Redirect href="/(app)" />;

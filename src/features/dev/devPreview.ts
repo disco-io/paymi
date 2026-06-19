@@ -1,4 +1,3 @@
-import { create } from 'zustand';
 import type { Group, GroupMember } from '@/types/database';
 
 export const DEMO_GROUP_ID = 'demo-aruba';
@@ -58,18 +57,6 @@ export const DEMO_MEMBERS: GroupMember[] = [
   },
 ];
 
-type DevPreviewStore = {
-  enabled: boolean;
-  enable: () => void;
-  disable: () => void;
-};
-
-export const useDevPreview = create<DevPreviewStore>((set) => ({
-  enabled: false,
-  enable: () => set({ enabled: true }),
-  disable: () => set({ enabled: false }),
-}));
-
-export function isDevPreviewActive() {
-  return __DEV__ && useDevPreview.getState().enabled;
+export function isDemoGroup(groupId: string | null | undefined) {
+  return groupId === DEMO_GROUP_ID;
 }
